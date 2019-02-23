@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using Microsoft.AspNetCore;
@@ -11,6 +12,10 @@ namespace FileShareSite
     {
         public static void Main(string[] args)
         {
+            var culture = CultureInfo.CurrentCulture.Clone() as CultureInfo;
+            culture.NumberFormat.NumberDecimalSeparator = ".";
+            CultureInfo.DefaultThreadCurrentCulture = culture;
+
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             CreateWebHostBuilder(args).Build().Run();
         }

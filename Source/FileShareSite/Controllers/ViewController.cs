@@ -24,7 +24,7 @@ namespace FileShareSite.Controllers
         [HttpGet]
         public IActionResult Index(string path)
         {
-            const string root = @"C:\Users\User\Hämtade Filer";
+            const string root = @"C:\Users\Michal Piatkowski\Downloads";
 
             if (path == null)
                 path = root;
@@ -41,19 +41,18 @@ namespace FileShareSite.Controllers
                     var archive = archiveResult.Archive;
                     var file = archiveResult.File;
                     var stream = archive[file.FullName].OpenReader();
-                    var extension = Path.GetExtension(file.Name);
 
                     HttpContext.Response.RegisterForDispose(stream);
                     HttpContext.Response.RegisterForDispose(archive);
 
                     if (file.Length < HIGHLIGHT_SIZE_THRESHOLD &&
-                        HighlightTypeMap.TryGetLanguage(extension, out var lang))
+                        HighlightTypeMap.TryGetLanguage(Path.GetExtension(file.Name), out var lang))
                     {
                         var highlight = new HighlightModel(stream, lang);
                         return View("HighlightIndex", highlight);
                     }
 
-                    var mime = MimeTypeMap.GetMime(extension);
+                    var mime = MimeTypeMap.GetMime(file.Name);
                     return File(stream, mime, false);
                 }
 
@@ -66,7 +65,7 @@ namespace FileShareSite.Controllers
 
             // serve file
             if (FileIO.Exists(path))
-                return File(FileIO.OpenRead(path), MimeTypeMap.GetMime(Path.GetExtension(path)), enableRangeProcessing: true);
+                return File(FileIO.OpenRead(path), MimeTypeMap.GetMime(path), enableRangeProcessing: true);
 
             // serve directory
             var dir = new DirectoryInfo(path);

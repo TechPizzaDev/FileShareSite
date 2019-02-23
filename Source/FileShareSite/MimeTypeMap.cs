@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 
@@ -8,7 +9,7 @@ namespace FileShareSite
     public static class MimeTypeMap
     {
         private static readonly Lazy<Dictionary<string, string>> _mappings;
-
+        
         static MimeTypeMap()
         {
             _mappings = new Lazy<Dictionary<string, string>>(
@@ -20,18 +21,21 @@ namespace FileShareSite
             var mappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 #region Big list of mime types
-            
+
                 // any mime types on left side not pre-loaded on right side, are added automatically
                 // some mime types can map to multiple extensions, so to get a deterministic mapping,
                 // add those to the dictionary specifcially
                 //
                 // combination of values from Windows 7 Registry and 
                 // from C:\Windows\System32\inetsrv\config\applicationHost.config
-                // some added, including .7z and .dat
                 //
                 // Some added based on http://www.iana.org/assignments/media-types/media-types.xhtml
                 // which lists mime types, but not extensions
-                //
+
+                { "LICENSE", "text/plain" },
+                { ".gitignore", "text/plain" },
+                { ".gitmodules", "text/plain" },
+
                 {".323", "text/h323"},
                 {".3g2", "video/3gpp2"},
                 {".3gp", "video/3gpp"},
@@ -715,8 +719,16 @@ namespace FileShareSite
             if (extension == null)
                 throw new ArgumentNullException(nameof(extension));
 
-            if (!extension.StartsWith('.'))
+            string path = extension;
+            extension = Path.GetExtension(extension);
+            if (extension == string.Empty)
+            {
+                extension = Path.GetFileName(path);
+            }
+            else if (!extension.StartsWith('.'))
+            {
                 extension = '.' + extension;
+            }
             
             return _mappings.Value.TryGetValue(extension, out string mime) ? mime : "application/octet-stream";
         }

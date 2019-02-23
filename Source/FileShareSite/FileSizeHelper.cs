@@ -20,7 +20,7 @@ namespace FileShareSite
             string result = Math.Round(div, decimals).ToString("0.#");
 
             if (order >= 0)
-                result += " " + _sizeSuffixes[order];
+                result += _sizeSuffixes[order];
             return result;
         }
 
