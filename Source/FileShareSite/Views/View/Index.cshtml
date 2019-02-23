@@ -1,0 +1,48 @@
+﻿@using System.IO
+@model FileSystemModel
+@{
+	ViewData["Title"] = "FileSystemView";
+}
+@section Styles {
+	<link rel="stylesheet" type="text/css" href="~/resources/css/ViewSheet.css" />
+}
+
+<table class="table">
+	<thead>
+		<tr>
+			<th>Type</th>
+			<th>Name</th>
+			<th>Size</th>
+		@if (Model.IsArchive)
+		{
+			<th>Compressed</th>
+			<th>Ratio</th>
+		}
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (var entry in Model.Entries)
+		{
+			<tr>
+				@{
+					var file = entry as FileEntryModel;
+					string size = file != null ? FileSizeHelper.GetString(file.Length) : "-";
+				}
+				<td>@entry.Type</td>
+				<td>@entry.Name</td>
+				<td class="filesize">@size</td>
+			@if (Model.IsArchive)
+			{
+				var zipFile = entry as ZipFileEntryModel;
+				string zipSize = zipFile != null ? FileSizeHelper.GetString(zipFile.CompressedLength) : "-";
+
+				string ratio = (file != null && zipFile != null && file.Length != 0) ?
+					(100 - (decimal)zipFile.CompressedLength / file.Length * 100).ToString("0") + '%' : "-";
+
+				<td class="filesize">@zipSize</td>
+				<td class="filesize">@ratio</td>
+			}
+			</tr>
+		}
+	</tbody>
+</table>
