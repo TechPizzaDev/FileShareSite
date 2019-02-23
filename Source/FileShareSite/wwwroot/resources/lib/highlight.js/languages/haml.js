@@ -105,6 +105,6 @@ function(hljs) {
   };
 };
 
-const haml_references = [
+var haml_references = [
   "ruby"
 ];

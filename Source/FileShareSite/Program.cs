@@ -11,13 +11,8 @@ namespace FileShareSite
     {
         public static void Main(string[] args)
         {
-            foreach(var f in Directory.EnumerateFiles(@"D:\Repositories\FileShareSite\FileShareSite\wwwroot\resources\lib\highlight.js\languages"))
-                ProcessHighlightJsFile(f);
-
-            Console.ReadKey();
-
-            //Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            //CreateWebHostBuilder(args).Build().Run();
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            CreateWebHostBuilder(args).Build().Run();
         }
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args)
@@ -31,7 +26,7 @@ namespace FileShareSite
         private static void ProcessHighlightJsFile(string path)
         {
             //string name = Path.GetFileNameWithoutExtension(path);
-            //string safeName = name.Replace("-", "_");
+            //string safeName = name.Replace(" - ", "_");
             //var langRefs = new HashSet<string>();
             //
             //var builder = new StringBuilder();

@@ -23,7 +23,7 @@ function mojolicious(hljs) {
   };
 };
 
-const mojolicious_references = [
+var mojolicious_references = [
   "xml",
   "perl"
 ];

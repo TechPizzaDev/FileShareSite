@@ -106,7 +106,7 @@ function xml(hljs) {
   };
 };
 
-const xml_references = [
+var xml_references = [
   "php",
   "css",
   "actionscript",

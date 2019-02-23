@@ -167,6 +167,6 @@ function qml(hljs) {
   };
 };
 
-const qml_references = [
+var qml_references = [
   "xml"
 ];

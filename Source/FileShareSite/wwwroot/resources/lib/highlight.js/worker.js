@@ -1,38 +1,32 @@
+importScripts("/resources/lib/highlight.js/highlight.js");
+importScripts("/resources/js/he.js");
+const scriptMap = {};
+
 onmessage = function (event) {
-	importScripts("/resources/lib/highlight.js/highlight.js");
 	const data = event.data;
 
-	importScripts(`/resources/lib/highlight.js/languages/cs.js`);
-	importScripts(`/resources/lib/highlight.js/languages/xml.js`);
-
-	importScripts(`/resources/lib/highlight.js/languages/${data.language}.js`);
-	hljs.registerLanguage(data.language, this[data.language]);
-	hljs.registerLanguage("cs", this["cs"]);
-	hljs.registerLanguage("xml", this["xml"]);
-
+	loadLang(data.language);
 	hljs.configure({ tabReplace: 4 });
-	let result = hljs.highlight(data.language, data.code, true);
+
+	const srcHtml = he.decode(data.code);
+	const result = hljs.highlight(data.language, srcHtml, true);
 	postMessage({ result: result.value, elementId: data.elementId });
 
 	//close();
 };
 
-function encodeHtml(str) {
-	return str
-		.replace(/&/g, '&amp;')
-		.replace(/"/g, '&quot;')
-		.replace(/'/g, '&#39;')
-		.replace(/</g, '&lt;')
-		.replace(/>/g, '&gt;')
-		.replace(/\//g, '&#x2F;');
-}
+function loadLang(name) {
+	if (scriptMap[name] !== name) {
+		scriptMap[name] = name;
 
-function decodeHtml(str) {
-	return str
-		.replace(/&quot;/g, '"')
-		.replace(/&#39;/g, "'")
-		.replace(/&lt;/g, '<')
-		.replace(/&gt;/g, '>')
-		.replace(/&amp;/g, '&')
-		.replace(/&#x2F;/g, '/');
+		importScripts(`/resources/lib/highlight.js/languages/${name}.js`);
+		hljs.registerLanguage(name, this[name]);
+
+		const refs = this[`${name.replace('_', '-')}_references`];
+		if (refs) {
+			for (let i = 0; i < refs.length; i++) {
+				loadLang(refs[i]);
+			}
+		}
+	}
 }

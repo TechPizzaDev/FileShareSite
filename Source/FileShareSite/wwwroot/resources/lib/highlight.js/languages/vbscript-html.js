@@ -10,7 +10,7 @@ function vbscript_html(hljs) {
   };
 };
 
-const vbscript_html_references = [
+var vbscript_html_references = [
   "xml",
   "vbscript"
 ];

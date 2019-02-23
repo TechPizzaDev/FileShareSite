@@ -62,6 +62,6 @@ function django(hljs) {
   };
 };
 
-const django_references = [
+var django_references = [
   "xml"
 ];

@@ -46,6 +46,6 @@ function parser3(hljs) {
   };
 };
 
-const parser3_references = [
+var parser3_references = [
   "xml"
 ];

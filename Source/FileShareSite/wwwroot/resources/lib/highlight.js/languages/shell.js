@@ -13,6 +13,6 @@ function shell(hljs) {
   }
 };
 
-const shell_references = [
+var shell_references = [
   "bash"
 ];

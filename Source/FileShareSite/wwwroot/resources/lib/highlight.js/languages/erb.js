@@ -13,7 +13,7 @@ function erb(hljs) {
   };
 };
 
-const erb_references = [
+var erb_references = [
   "xml",
   "ruby"
 ];

@@ -486,7 +486,7 @@ function pgsql(hljs) {
   };
 };
 
-const pgsql_references = [
+var pgsql_references = [
   "perl",
   "python",
   "tcl",

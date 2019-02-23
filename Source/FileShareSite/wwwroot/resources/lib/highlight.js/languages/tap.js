@@ -34,6 +34,6 @@ function tap(hljs) {
   };
 };
 
-const tap_references = [
+var tap_references = [
   "yaml"
 ];

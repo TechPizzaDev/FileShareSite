@@ -30,6 +30,6 @@ function dust(hljs) {
   };
 };
 
-const dust_references = [
+var dust_references = [
   "xml"
 ];

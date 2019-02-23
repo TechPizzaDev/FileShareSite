@@ -90,6 +90,6 @@ function yaml(hljs) {
   };
 };
 
-const yaml_references = [
+var yaml_references = [
   "ruby"
 ];

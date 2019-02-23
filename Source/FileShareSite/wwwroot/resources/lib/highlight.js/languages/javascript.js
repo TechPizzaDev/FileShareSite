@@ -168,6 +168,6 @@ function javascript(hljs) {
   };
 };
 
-const javascript_references = [
+var javascript_references = [
   "xml"
 ];

@@ -64,6 +64,6 @@ function twig(hljs) {
   };
 };
 
-const twig_references = [
+var twig_references = [
   "xml"
 ];

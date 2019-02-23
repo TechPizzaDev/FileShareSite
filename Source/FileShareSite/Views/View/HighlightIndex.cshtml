@@ -1,25 +1,17 @@
-﻿@model HighlightModel
-@section Styles {
-	<link rel="stylesheet" href="~/resources/css/highlight.js/default.css" />
+﻿@using System.IO;
+@model HighlightModel
+@{
+	ViewData["Title"] = "Highlighted";
 }
-<pre><code id="container-0" class="lang-cs hljs">using System.Collections.Generic;
-
-namespace FileShareSite.Models
-{
-    public class FileSystemModel
-    {
-        public bool IsArchive { get; }
-
-        public FileSystemModel(bool isArchive)
-        {
-            IsArchive = isArchive;
-        }
-    }
+@section Styles
+	{
+	<link rel="stylesheet" type="text/css" href="~/resources/css/highlight.js/github.css" />
 }
-</code></pre>
-<pre><code id="container-1" class="lang-cshtml hljs">@Html.Raw(System.IO.File.ReadAllText(@"D:\Repositories\FileShareSite\FileShareSite\Views\Shared\Error.cshtml"))</code></pre>
-
-@section Scripts {
+<pre>
+<code id="container-0" class="hljs"></code>
+</pre>
+@section Scripts
+	{
 	<script>
 		addEventListener("load", () => {
 			const worker = new Worker("/resources/lib/highlight.js/worker.js");
@@ -28,20 +20,11 @@ namespace FileShareSite.Models
 				node.innerHTML = event.data.result;
 			};
 
-			const nodes = document.getElementsByTagName("code");
-			for (let i = 0; i < nodes.length; i++) {
-				const node = nodes[i];
-				const lang = node.classList[0];
-
-				const langPrefix = "lang-";
-				if (lang && lang.startsWith(langPrefix)) {
-					worker.postMessage({
-						language: lang.substring(langPrefix.length),
-						code: node.innerHTML,
-						elementId: node.id
-					});
-				}
-			}
+			worker.postMessage({
+				language: "@Model.HighlightLanguage",
+				code: "@Model.Blocks[0]",
+				elementId: "container-0"
+			});
 		});
 	</script>
 }

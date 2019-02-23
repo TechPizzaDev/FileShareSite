@@ -14,20 +14,9 @@ namespace FileShareSite
             {
                 var builder = new StringBuilder();
 
-                void RecursiveBack(ZipDirectoryEntry parent)
-                {
-                    if(parent.Parent != null)
-                        RecursiveBack(parent.Parent);
-
-                    if (!(parent is ZipRootDirectoryEntry))
-                    {
-                        builder.Append(parent.Name);
-                        builder.Append('/');
-                    }
-                }
-
+                // start the recursion
                 if(Parent != null)
-                    RecursiveBack(Parent);
+                    RecursiveAppend(builder, Parent);
 
                 builder.Append(Name);
                 return builder.ToString();
@@ -38,6 +27,20 @@ namespace FileShareSite
         {
             Parent = parent;
             Name = name;
+        }
+
+        private static void RecursiveAppend(StringBuilder builder, ZipDirectoryEntry parent)
+        {
+            // calling this function again before appending the current
+            // name creates the full name by unwinding the hierarchy
+            if (parent.Parent != null)
+                RecursiveAppend(builder, parent.Parent);
+
+            if (!(parent is ZipRootDirectoryEntry))
+            {
+                builder.Append(parent.Name);
+                builder.Append('/');
+            }
         }
     }
 

@@ -20,6 +20,6 @@ function dockerfile(hljs) {
   }
 };
 
-const dockerfile_references = [
+var dockerfile_references = [
   "bash"
 ];

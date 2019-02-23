@@ -102,6 +102,6 @@ function dart (hljs) {
   }
 };
 
-const dart_references = [
+var dart_references = [
   "markdown"
 ];

@@ -22,6 +22,6 @@ function julia_repl(hljs) {
   }
 };
 
-const julia_repl_references = [
+var julia_repl_references = [
   "julia"
 ];

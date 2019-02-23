@@ -168,6 +168,6 @@ function xquery(hljs) {
   };
 };
 
-const xquery_references = [
+var xquery_references = [
   "xml"
 ];

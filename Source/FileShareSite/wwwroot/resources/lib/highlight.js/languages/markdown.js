@@ -106,6 +106,6 @@ function markdown(hljs) {
   };
 };
 
-const markdown_references = [
+var markdown_references = [
   "xml"
 ];

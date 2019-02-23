@@ -13,6 +13,6 @@ function clojure_repl(hljs) {
   }
 };
 
-const clojure_repl_references = [
+var clojure_repl_references = [
   "clojure"
 ];

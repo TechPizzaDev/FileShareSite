@@ -7,14 +7,15 @@ namespace FileShareSite
 {
     public static class MimeTypeMap
     {
-        private static readonly Lazy<IDictionary<string, string>> _mappings;
+        private static readonly Lazy<Dictionary<string, string>> _mappings;
 
         static MimeTypeMap()
         {
-            _mappings = new Lazy<IDictionary<string, string>>(BuildMappings, LazyThreadSafetyMode.ExecutionAndPublication);
+            _mappings = new Lazy<Dictionary<string, string>>(
+                BuildMappings, LazyThreadSafetyMode.ExecutionAndPublication);
         }
 
-        private static IDictionary<string, string> BuildMappings()
+        private static Dictionary<string, string> BuildMappings()
         {
             var mappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
@@ -253,6 +254,7 @@ namespace FileShareSite
                 {".library-ms", "application/windows-library+xml"},
                 {".lit", "application/x-ms-reader"},
                 {".loadtest", "application/xml"},
+                {".log", "text/plain"},
                 {".lpk", "application/octet-stream"},
                 {".lsf", "video/x-la-asf"},
                 {".lst", "text/plain"},
@@ -713,8 +715,8 @@ namespace FileShareSite
             if (extension == null)
                 throw new ArgumentNullException(nameof(extension));
 
-            if (!extension.StartsWith("."))
-                extension = "." + extension;
+            if (!extension.StartsWith('.'))
+                extension = '.' + extension;
             
             return _mappings.Value.TryGetValue(extension, out string mime) ? mime : "application/octet-stream";
         }
@@ -724,7 +726,7 @@ namespace FileShareSite
             if (mimeType == null)
                 throw new ArgumentNullException(nameof(mimeType));
 
-            if (mimeType.StartsWith("."))
+            if (mimeType.StartsWith('.'))
                 throw new ArgumentException("Requested mime type is not valid: " + mimeType);
 
             if (_mappings.Value.TryGetValue(mimeType, out string extension))
@@ -739,6 +741,11 @@ namespace FileShareSite
         public static string GetExtension(string mimeType)
         {
             return GetExtension(mimeType, true);
+        }
+
+        public static Dictionary<string, string>.Enumerator GetEnumerator()
+        {
+            return _mappings.Value.GetEnumerator();
         }
     }
 }

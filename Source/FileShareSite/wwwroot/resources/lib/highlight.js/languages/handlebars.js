@@ -32,6 +32,6 @@ function handlebars(hljs) {
   };
 };
 
-const handlebars_references = [
+var handlebars_references = [
   "xml"
 ];

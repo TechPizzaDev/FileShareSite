@@ -155,6 +155,6 @@ function perl(hljs) {
   };
 };
 
-const perl_references = [
+var perl_references = [
   "mojolicious"
 ];

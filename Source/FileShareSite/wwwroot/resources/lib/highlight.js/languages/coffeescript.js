@@ -144,6 +144,6 @@ function coffeescript(hljs) {
   };
 };
 
-const coffeescript_references = [
+var coffeescript_references = [
   "javascript"
 ];

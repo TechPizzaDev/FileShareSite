@@ -122,7 +122,7 @@ function cos(hljs) {
   };
 };
 
-const cos_references = [
+var cos_references = [
   "sql",
   "javascript",
   "xml"

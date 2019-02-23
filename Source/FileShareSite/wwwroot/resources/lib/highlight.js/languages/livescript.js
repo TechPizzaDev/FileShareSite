@@ -147,6 +147,6 @@ function livescript(hljs) {
   };
 };
 
-const livescript_references = [
+var livescript_references = [
   "javascript"
 ];

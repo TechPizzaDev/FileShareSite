@@ -69,6 +69,6 @@ function htmlbars(hljs) {
   };
 };
 
-const htmlbars_references = [
+var htmlbars_references = [
   "xml"
 ];

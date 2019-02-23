@@ -11,6 +11,8 @@ namespace FileShareSite.Controllers
 {
     public class ViewController : Controller
     {
+        public const int HIGHLIGHT_SIZE_THRESHOLD = 1024 * 1024 * 8;
+
         private static readonly char[] _segmentSeparators = { '/', '\\' };
 
         private static string[] GetSegments(string path)
@@ -22,7 +24,7 @@ namespace FileShareSite.Controllers
         [HttpGet]
         public IActionResult Index(string path)
         {
-            const string root = @"C:\Users\Michal Piatkowski\Downloads";
+            const string root = @"C:\Users\User\Hämtade Filer";
 
             if (path == null)
                 path = root;
@@ -35,13 +37,24 @@ namespace FileShareSite.Controllers
             {
                 if (archiveResult.HasFile)
                 {
-                    return View("HighlightIndex", new HighlightModel());
-
                     // serve file inside zip
-                    var file = archiveResult.File;
                     var archive = archiveResult.Archive;
-                    var stream = archive[file].OpenReader();
-                    return new ZipFileStreamResult(archive, stream, MimeTypeMap.GetMime(Path.GetExtension(file)));
+                    var file = archiveResult.File;
+                    var stream = archive[file.FullName].OpenReader();
+                    var extension = Path.GetExtension(file.Name);
+
+                    HttpContext.Response.RegisterForDispose(stream);
+                    HttpContext.Response.RegisterForDispose(archive);
+
+                    if (file.Length < HIGHLIGHT_SIZE_THRESHOLD &&
+                        HighlightTypeMap.TryGetLanguage(extension, out var lang))
+                    {
+                        var highlight = new HighlightModel(stream, lang);
+                        return View("HighlightIndex", highlight);
+                    }
+
+                    var mime = MimeTypeMap.GetMime(extension);
+                    return File(stream, mime, false);
                 }
 
                 if(archiveResult.HasModel)
@@ -192,25 +205,25 @@ namespace FileShareSite.Controllers
                             }
                             else if (directory.Files.TryGetValue(key, out var file))
                             {
-                                return new ArchiveSearchResult(successful: true, value: file.FullName);
+                                return new ArchiveSearchResult(successful: true, file);
                             }
 
-                            return new ArchiveSearchResult(successful: false, value: null);
+                            return new ArchiveSearchResult(successful: false, file: null);
                         }
 
                         AddItems(directory);
-                        return new ArchiveSearchResult(successful: true, value: null);
+                        return new ArchiveSearchResult(successful: true, file: null);
                     }
 
                     var searchResult = RecursiveSearch(topDir);
-                    if (searchResult.IsSuccessful && searchResult.Value != null)
+                    if (searchResult.IsSuccessful && searchResult.File != null)
                     {
                         leaveArchiveOpen = true;
-                        return new ArchiveViewResult(archive, file: searchResult.Value);
+                        return new ArchiveViewResult(archive, searchResult.File);
                     }
                 }
 
-                return new ArchiveViewResult(model: new FileSystemModel(modelItems, isArchive: true));
+                return new ArchiveViewResult(new FileSystemModel(modelItems, isArchive: true));
             }
             finally
             {
@@ -222,12 +235,12 @@ namespace FileShareSite.Controllers
         readonly struct ArchiveSearchResult
         {
             public bool IsSuccessful { get; }
-            public string Value { get; }
+            public ZipFileEntry File { get; }
 
-            public ArchiveSearchResult(bool successful, string value)
+            public ArchiveSearchResult(bool successful, ZipFileEntry file)
             {
                 IsSuccessful = successful;
-                Value = value;
+                File = file;
             }
         }
 
@@ -236,13 +249,13 @@ namespace FileShareSite.Controllers
             public bool IsValid { get; }
 
             public ZipFile Archive { get; }
-            public string File { get; }
+            public ZipFileEntry File { get; }
             public bool HasFile => Archive != null && File != null;
 
             public FileSystemModel Model { get; }
             public bool HasModel => Model != null;
 
-            private ArchiveViewResult(ZipFile archive, string file, FileSystemModel model)
+            private ArchiveViewResult(ZipFile archive, ZipFileEntry file, FileSystemModel model)
             {
                 IsValid = true;
                 Archive = archive;
@@ -250,7 +263,7 @@ namespace FileShareSite.Controllers
                 Model = model;
             }
 
-            public ArchiveViewResult(ZipFile archive, string file) : this(archive, file, null)
+            public ArchiveViewResult(ZipFile archive, ZipFileEntry file) : this(archive, file, null)
             {
             }
 

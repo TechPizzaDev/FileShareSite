@@ -378,7 +378,7 @@ function cshtml(hljs) {
     };
 }
 
-const cshtml_references = [
+var cshtml_references = [
   "cs",
   "xml"
 ];

@@ -186,6 +186,6 @@ function asciidoc(hljs) {
   };
 };
 
-const asciidoc_references = [
+var asciidoc_references = [
   "xml"
 ];
