@@ -37,27 +37,23 @@ namespace FileShareSite.Controllers
             {
                 if (archiveResult.HasFile)
                 {
-                    // serve file inside zip
+                    // serve file from inside the zip
                     var archive = archiveResult.Archive;
-                    var file = archiveResult.File;
-                    var stream = archive[file.FullName].OpenReader();
-
-                    HttpContext.Response.RegisterForDispose(stream);
+                    var entry = archive[archiveResult.File.FullName];
                     HttpContext.Response.RegisterForDispose(archive);
 
-                    if (file.Length < HIGHLIGHT_SIZE_THRESHOLD &&
-                        HighlightTypeMap.TryGetLanguage(Path.GetExtension(file.Name), out var lang))
-                    {
-                        var highlight = new HighlightModel(stream, lang);
-                        return View("HighlightIndex", highlight);
-                    }
+                    string charset;
+                    using(var stream = entry.OpenReader())
+                        charset = GetCharset(stream);
 
-                    var mime = MimeTypeMap.GetMime(file.Name);
-                    return File(stream, mime, false);
+                    var mainStream = entry.OpenReader();
+                    HttpContext.Response.RegisterForDispose(mainStream);
+
+                    return ServeFile(mainStream, path, charset, enableRangeRequests: false);
                 }
 
                 if(archiveResult.HasModel)
-                    // serve directory inside zip
+                    // serve directory from inside the zip
                     return View(archiveResult.Model);
 
                 return NotFound();
@@ -65,7 +61,13 @@ namespace FileShareSite.Controllers
 
             // serve file
             if (FileIO.Exists(path))
-                return File(FileIO.OpenRead(path), MimeTypeMap.GetMime(path), enableRangeProcessing: true);
+            {
+                Stream stream = FileIO.OpenRead(path);
+                string charset = GetCharset(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+
+                return ServeFile(stream, path, charset, enableRangeRequests: true);
+            }
 
             // serve directory
             var dir = new DirectoryInfo(path);
@@ -74,6 +76,33 @@ namespace FileShareSite.Controllers
 
             var dirModel = BuildDirectoryModel(dir);
             return View(dirModel);
+        }
+
+        private string GetCharset(Stream stream)
+        {
+            var detector = new Ude.CharsetDetector();
+            detector.Feed(stream);
+            detector.DataEnd();
+            
+            return detector.Charset;
+        }
+
+        private IActionResult ServeFile(Stream stream, string path, string charset, bool enableRangeRequests)
+        {
+            if (stream.Length < HIGHLIGHT_SIZE_THRESHOLD &&
+                HighlightTypeMap.TryGetLanguage(Path.GetExtension(path), out var lang))
+            {
+                var highlight = new HighlightModel(stream, lang);
+                return View("HighlightIndex", highlight);
+            }
+
+            string mime = MimeTypeMap.GetMime(path);
+
+            if (charset != null)
+                if (mime.StartsWith("text/") && !mime.Contains("; charset"))
+                    mime += "; charset=" + charset;
+
+            return File(stream, mime, enableRangeRequests);
         }
 
         private FileSystemModel BuildDirectoryModel(DirectoryInfo directory)

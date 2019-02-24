@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 
 namespace FileShareSite
@@ -9,7 +10,8 @@ namespace FileShareSite
     public static class MimeTypeMap
     {
         private static readonly Lazy<Dictionary<string, string>> _mappings;
-        
+
+
         static MimeTypeMap()
         {
             _mappings = new Lazy<Dictionary<string, string>>(
@@ -35,6 +37,8 @@ namespace FileShareSite
                 { "LICENSE", "text/plain" },
                 { ".gitignore", "text/plain" },
                 { ".gitmodules", "text/plain" },
+                { ".yaml", "application/x-yaml" },
+                { ".yml", "application/x-yaml" },
 
                 {".323", "text/h323"},
                 {".3g2", "video/3gpp2"},
@@ -727,12 +731,12 @@ namespace FileShareSite
             }
             else if (!extension.StartsWith('.'))
             {
-                extension = '.' + extension;
+                extension = "." + extension;
             }
-            
+
             return _mappings.Value.TryGetValue(extension, out string mime) ? mime : "application/octet-stream";
         }
-
+        
         public static string GetExtension(string mimeType, bool throwErrorIfNotFound)
         {
             if (mimeType == null)

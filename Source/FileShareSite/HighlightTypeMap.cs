@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace FileShareSite
 {
@@ -26,7 +24,9 @@ namespace FileShareSite
                 { ".json", "json" },
                 { ".md", "markdown" },
                 { ".xml", "xml" },
-                { ".user", "xml" }
+                { ".user", "xml" },
+                { ".yaml", "yaml" },
+                { ".yml", "yaml" }
             };
 
             return mappings;

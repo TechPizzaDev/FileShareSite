@@ -15,7 +15,12 @@ namespace FileShareSite.Models
             HighlightLanguage = highlightLanguage;
 
             using (var reader = new StreamReader(stream))
-                Blocks = new string[1] { reader.ReadToEnd() };
+            {
+                Blocks = new string[1] 
+                {
+                    reader.ReadToEnd()
+                };
+            }
         }
     }
 }
