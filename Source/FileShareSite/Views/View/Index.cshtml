@@ -10,7 +10,10 @@
 @{
 	string GetEntryHRef(string name)
 	{
-		return Context.Request.Path + "/" + name;
+		string path = Context.Request.Path;
+		if (!path.EndsWith('/'))
+			path += "/";
+		return path + name;
 	}
 }
 <table class="table">

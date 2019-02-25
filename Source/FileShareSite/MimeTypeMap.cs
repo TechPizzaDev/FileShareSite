@@ -2,25 +2,16 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading;
 
 namespace FileShareSite
 {
     public static class MimeTypeMap
     {
-        private static readonly Lazy<Dictionary<string, string>> _mappings;
-
-
+        private static readonly Dictionary<string, string> _mappings;
+        
         static MimeTypeMap()
         {
-            _mappings = new Lazy<Dictionary<string, string>>(
-                BuildMappings, LazyThreadSafetyMode.ExecutionAndPublication);
-        }
-
-        private static Dictionary<string, string> BuildMappings()
-        {
-            var mappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            _mappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 #region Big list of mime types
 
@@ -37,9 +28,10 @@ namespace FileShareSite
                 { "LICENSE", "text/plain" },
                 { ".gitignore", "text/plain" },
                 { ".gitmodules", "text/plain" },
+                { ".editorconfig", "text/plain" },
                 { ".yaml", "application/x-yaml" },
                 { ".yml", "application/x-yaml" },
-                { ".bat", "text/plain" },
+                { ".bat", "application/bat" },
 
                 {".323", "text/h323"},
                 {".3g2", "video/3gpp2"},
@@ -709,34 +701,30 @@ namespace FileShareSite
                 #endregion
             };
 
-            var copy = mappings.ToList();
+            var copy = _mappings.ToList();
             foreach (var map in copy)
             {
-                if (!mappings.ContainsKey(map.Value))
-                    mappings.Add(map.Value, map.Key);
+                if (!_mappings.ContainsKey(map.Value))
+                    _mappings.Add(map.Value, map.Key);
             }
-
-            return mappings;
         }
 
-        public static string GetMime(string extension)
+        public static string GetMime(string fullName)
         {
-            if (extension == null)
-                throw new ArgumentNullException(nameof(extension));
-
-            string path = extension;
-            extension = Path.GetExtension(extension);
-
+            if (fullName == null)
+                throw new ArgumentNullException(nameof(fullName));
+            
+            string extension = Path.GetExtension(fullName);
             if (extension == string.Empty)
             {
-                extension = Path.GetFileName(path);
+                extension = Path.GetFileName(fullName);
             }
             else if (!extension.StartsWith('.'))
             {
                 extension = "." + extension;
             }
 
-            return _mappings.Value.TryGetValue(extension, out string mime) ? mime : "application/octet-stream";
+            return _mappings.TryGetValue(extension, out string mime) ? mime : "application/octet-stream";
         }
         
         public static string GetExtension(string mimeType, bool throwErrorIfNotFound)
@@ -747,7 +735,7 @@ namespace FileShareSite
             if (mimeType.StartsWith('.'))
                 throw new ArgumentException("Requested mime type is not valid: " + mimeType);
 
-            if (_mappings.Value.TryGetValue(mimeType, out string extension))
+            if (_mappings.TryGetValue(mimeType, out string extension))
                 return extension;
 
             if (throwErrorIfNotFound)
@@ -763,7 +751,7 @@ namespace FileShareSite
 
         public static Dictionary<string, string>.Enumerator GetEnumerator()
         {
-            return _mappings.Value.GetEnumerator();
+            return _mappings.GetEnumerator();
         }
     }
 }

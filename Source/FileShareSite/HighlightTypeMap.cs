@@ -1,34 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading;
 
 namespace FileShareSite
 {
     public static class HighlightTypeMap
     {
-        private static readonly Lazy<Dictionary<string, string>> _mappings;
+        private static readonly Dictionary<string, string> _mappings;
 
         static HighlightTypeMap()
         {
-            _mappings = new Lazy<Dictionary<string, string>>(
-                BuildMappings, LazyThreadSafetyMode.ExecutionAndPublication);
-        }
-
-        private static Dictionary<string, string> BuildMappings()
-        {
-            var mappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            _mappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 { ".cs", "cs" },
                 { ".cshtml", "cshtml" },
                 { ".md", "markdown" },
                 { ".yaml", "yaml" },
                 { ".yml", "yaml" },
-                { ".json", "json" }
+                { ".json", "json" },
+                { ".cmd", "dos" },
+                { ".bat", "dos" },
+                { ".ini", "ini" },
+                { ".editorconfig", "ini" }
             };
-
-            return mappings;
         }
-
+        
         public static bool TryGetLanguage(string extension, out string language)
         {
             if (extension == null)
@@ -37,7 +32,7 @@ namespace FileShareSite
             if (!extension.StartsWith('.'))
                 extension = '.' + extension;
 
-            return _mappings.Value.TryGetValue(extension, out language);
+            return _mappings.TryGetValue(extension, out language);
         }
     }
 }

@@ -13,23 +13,28 @@ namespace FileShareSite.Controllers
     {
         public const int HIGHLIGHT_SIZE_THRESHOLD = 1024 * 1024 * 8;
 
-        private static readonly char[] _segmentSeparators = { '/', '\\' };
+        public static HashSet<string> _archiveExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".odt", ".ods", ".odp", ".odg",
+            ".docx", ".pptx", ".xlsx",
+            ".zip", ".jar"
+        };
 
         private static string[] GetSegments(string path)
         {
-            return path.Split(_segmentSeparators, StringSplitOptions.RemoveEmptyEntries);
+            return path.Split('/', StringSplitOptions.RemoveEmptyEntries);
         }
 
         // GET: /<controller>/
         [HttpGet]
         public IActionResult Index(string path)
         {
-            const string root = @"C:\Users\User\Hämtade Filer\";
-
+            const string root = @"C:\Users\Michal Piatkowski\Downloads\";
             if (path == null)
                 path = root;
             else
                 path = Path.Combine(root, path);
+            path = path.Replace('\\', '/');
 
             // try to enter a zip archive
             var archiveResult = BuildArchiveView(path);
@@ -38,12 +43,12 @@ namespace FileShareSite.Controllers
                 if (archiveResult.HasFile)
                 {
                     // serve file from inside the zip
-                    var entry = archiveResult.Archive[archiveResult.File.FullName];
-                    string extension = Path.GetExtension(archiveResult.File.FullName);
+                    string fullName = archiveResult.File.FullName;
+                    var entry = archiveResult.Archive[fullName];
                     HttpContext.Response.RegisterForDispose(archiveResult.Archive);
 
                     if (archiveResult.File.Length <= HIGHLIGHT_SIZE_THRESHOLD &&
-                        HighlightTypeMap.TryGetLanguage(extension, out var lang))
+                        HighlightTypeMap.TryGetLanguage(Path.GetExtension(fullName), out var lang))
                     {
                         var highlightStream = entry.OpenReader();
                         HttpContext.Response.RegisterForDispose(highlightStream);
@@ -52,7 +57,7 @@ namespace FileShareSite.Controllers
                         return View("HighlightIndex", highlight);
                     }
 
-                    string mime = MimeTypeMap.GetMime(extension);
+                    string mime = MimeTypeMap.GetMime(fullName);
                     if (IsTextMime(mime))
                     {
                         using (var stream = entry.OpenReader())
@@ -141,13 +146,6 @@ namespace FileShareSite.Controllers
             return new FileSystemModel(items, isArchive: false);
         }
 
-        public static HashSet<string> _archiveExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ".odt", ".ods", ".odp", ".odg",
-            ".docx", ".pptx", ".xlsx",
-            ".zip", ".jar"
-        };
-
         private ArchiveViewResult BuildArchiveView(string path)
         {
             var segments = GetSegments(path);
@@ -175,7 +173,7 @@ namespace FileShareSite.Controllers
                 int offset = i + 1;
                 var subPath = segments.Length > offset ? segments.AsMemory(offset) : Array.Empty<string>().AsMemory();
 
-                var result = BuildArchiveModelFromZip(zipPath, subPath);
+                var result = BuildArchiveModelFromZip(ZipFile.Read(zipPath), subPath);
                 if (result.IsValid)
                     return result;
             }
@@ -183,22 +181,20 @@ namespace FileShareSite.Controllers
             return default;
         }
 
-        private ArchiveViewResult BuildArchiveModelFromZip(string zipPath, ReadOnlyMemory<string> subPath)
+        private ArchiveViewResult BuildArchiveModelFromZip(ZipFile archive, ReadOnlyMemory<string> subPath)
         {
             bool leaveArchiveOpen = false;
-            ZipFile archive = null;
-
+            
             try
             {
-                archive = ZipFile.Read(zipPath);
-                var topDir = new ZipRootDirectoryEntry();
+                var topDir = new ArchiveDirectoryEntry(null, "root");
 
                 foreach (var entry in archive.Entries)
                 {
                     var segments = GetSegments(entry.FileName);
                     int index = 0;
 
-                    void Recursive(ZipDirectoryEntry directory)
+                    void Recursive(ArchiveDirectoryEntry directory)
                     {
                         string name = Path.GetFileName(segments[index++].ToString());
 
@@ -206,7 +202,7 @@ namespace FileShareSite.Controllers
                         {
                             if (!directory.Directories.TryGetValue(name, out var nextDir))
                             {
-                                nextDir = new ZipDirectoryEntry(directory, name);
+                                nextDir = new ArchiveDirectoryEntry(directory, name);
                                 directory.Directories.Add(name, nextDir);
                             }
 
@@ -219,13 +215,13 @@ namespace FileShareSite.Controllers
                             {
                                 if (!directory.Directories.TryGetValue(name, out var nextDir))
                                 {
-                                    nextDir = new ZipDirectoryEntry(directory, name);
+                                    nextDir = new ArchiveDirectoryEntry(directory, name);
                                     directory.Directories.Add(name, nextDir);
                                 }
                                 Recursive(nextDir);
                             }
                             else
-                                directory.Files.Add(name, new ZipFileEntry(directory, name, entry.UncompressedSize, entry.CompressedSize));
+                                directory.Files.Add(name, new ArchiveFileEntry(directory, name, entry.UncompressedSize, entry.CompressedSize));
                         }
                     }
 
@@ -234,7 +230,7 @@ namespace FileShareSite.Controllers
 
                 var modelItems = new List<FileSystemEntryModel>();
 
-                void AddItems(ZipDirectoryEntry directory)
+                void AddItems(ArchiveDirectoryEntry directory)
                 {
                     foreach (var dir in directory.Directories.Values)
                         modelItems.Add(new ZipDirectoryEntryModel(dir.Name));
@@ -248,7 +244,7 @@ namespace FileShareSite.Controllers
                 else
                 {
                     int index = 0;
-                    ArchiveSearchResult RecursiveSearch(ZipDirectoryEntry directory)
+                    ArchiveSearchResult RecursiveSearch(ArchiveDirectoryEntry directory)
                     {
                         if (index < subPath.Length)
                         {
@@ -269,7 +265,7 @@ namespace FileShareSite.Controllers
                         return new ArchiveSearchResult(successful: true, file: null);
                     }
 
-                    var searchResult = RecursiveSearch(topDir);
+                    ArchiveSearchResult searchResult = RecursiveSearch(topDir);
                     if (searchResult.IsSuccessful && searchResult.File != null)
                     {
                         leaveArchiveOpen = true;
@@ -289,9 +285,9 @@ namespace FileShareSite.Controllers
         readonly struct ArchiveSearchResult
         {
             public bool IsSuccessful { get; }
-            public ZipFileEntry File { get; }
+            public ArchiveFileEntry File { get; }
 
-            public ArchiveSearchResult(bool successful, ZipFileEntry file)
+            public ArchiveSearchResult(bool successful, ArchiveFileEntry file)
             {
                 IsSuccessful = successful;
                 File = file;
@@ -303,13 +299,13 @@ namespace FileShareSite.Controllers
             public bool IsValid { get; }
 
             public ZipFile Archive { get; }
-            public ZipFileEntry File { get; }
+            public ArchiveFileEntry File { get; }
             public bool HasFile => Archive != null && File != null;
 
             public FileSystemModel Model { get; }
             public bool HasModel => Model != null;
 
-            private ArchiveViewResult(ZipFile archive, ZipFileEntry file, FileSystemModel model)
+            private ArchiveViewResult(ZipFile archive, ArchiveFileEntry file, FileSystemModel model)
             {
                 IsValid = true;
                 Archive = archive;
@@ -317,7 +313,7 @@ namespace FileShareSite.Controllers
                 Model = model;
             }
 
-            public ArchiveViewResult(ZipFile archive, ZipFileEntry file) : this(archive, file, null)
+            public ArchiveViewResult(ZipFile archive, ArchiveFileEntry file) : this(archive, file, null)
             {
             }
 
