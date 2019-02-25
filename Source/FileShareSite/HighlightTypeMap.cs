@@ -20,13 +20,10 @@ namespace FileShareSite
             {
                 { ".cs", "cs" },
                 { ".cshtml", "cshtml" },
-                { ".csproj", "xml" },
-                { ".json", "json" },
                 { ".md", "markdown" },
-                { ".xml", "xml" },
-                { ".user", "xml" },
                 { ".yaml", "yaml" },
-                { ".yml", "yaml" }
+                { ".yml", "yaml" },
+                { ".json", "json" }
             };
 
             return mappings;

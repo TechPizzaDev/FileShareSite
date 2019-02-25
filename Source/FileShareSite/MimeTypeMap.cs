@@ -39,6 +39,7 @@ namespace FileShareSite
                 { ".gitmodules", "text/plain" },
                 { ".yaml", "application/x-yaml" },
                 { ".yml", "application/x-yaml" },
+                { ".bat", "text/plain" },
 
                 {".323", "text/h323"},
                 {".3g2", "video/3gpp2"},
@@ -129,7 +130,7 @@ namespace FileShareSite
                 {".cs", "text/plain"},
                 {".csdproj", "text/plain"},
                 {".csh", "application/x-csh"},
-                {".csproj", "text/plain"},
+                {".csproj", "text/xml"},
                 {".css", "text/css"},
                 {".csv", "text/csv"},
                 {".cur", "application/octet-stream"},
@@ -533,7 +534,7 @@ namespace FileShareSite
                 {".txt", "text/plain"},
                 {".u32", "application/octet-stream"},
                 {".uls", "text/iuls"},
-                {".user", "text/plain"},
+                {".user", "text/xml"},
                 {".ustar", "application/x-ustar"},
                 {".vb", "text/plain"},
                 {".vbdproj", "text/plain"},
@@ -725,6 +726,7 @@ namespace FileShareSite
 
             string path = extension;
             extension = Path.GetExtension(extension);
+
             if (extension == string.Empty)
             {
                 extension = Path.GetFileName(path);

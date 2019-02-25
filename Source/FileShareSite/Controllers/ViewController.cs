@@ -24,7 +24,7 @@ namespace FileShareSite.Controllers
         [HttpGet]
         public IActionResult Index(string path)
         {
-            const string root = @"C:\Users\Michal Piatkowski\Downloads";
+            const string root = @"C:\Users\User\Hämtade Filer\";
 
             if (path == null)
                 path = root;
@@ -38,18 +38,30 @@ namespace FileShareSite.Controllers
                 if (archiveResult.HasFile)
                 {
                     // serve file from inside the zip
-                    var archive = archiveResult.Archive;
-                    var entry = archive[archiveResult.File.FullName];
-                    HttpContext.Response.RegisterForDispose(archive);
+                    var entry = archiveResult.Archive[archiveResult.File.FullName];
+                    string extension = Path.GetExtension(archiveResult.File.FullName);
+                    HttpContext.Response.RegisterForDispose(archiveResult.Archive);
 
-                    string charset;
-                    using(var stream = entry.OpenReader())
-                        charset = GetCharset(stream);
+                    if (archiveResult.File.Length <= HIGHLIGHT_SIZE_THRESHOLD &&
+                        HighlightTypeMap.TryGetLanguage(extension, out var lang))
+                    {
+                        var highlightStream = entry.OpenReader();
+                        HttpContext.Response.RegisterForDispose(highlightStream);
+
+                        var highlight = new HighlightModel(highlightStream, lang);
+                        return View("HighlightIndex", highlight);
+                    }
+
+                    string mime = MimeTypeMap.GetMime(extension);
+                    if (IsTextMime(mime))
+                    {
+                        using (var stream = entry.OpenReader())
+                            mime = UpdateCharset(stream, mime);
+                    }
 
                     var mainStream = entry.OpenReader();
                     HttpContext.Response.RegisterForDispose(mainStream);
-
-                    return ServeFile(mainStream, path, charset, enableRangeRequests: false);
+                    return File(mainStream, mime, enableRangeProcessing: false);
                 }
 
                 if(archiveResult.HasModel)
@@ -63,10 +75,21 @@ namespace FileShareSite.Controllers
             if (FileIO.Exists(path))
             {
                 Stream stream = FileIO.OpenRead(path);
-                string charset = GetCharset(stream);
-                stream.Seek(0, SeekOrigin.Begin);
+                string extension = Path.GetExtension(path);
 
-                return ServeFile(stream, path, charset, enableRangeRequests: true);
+                if (stream.Length <= HIGHLIGHT_SIZE_THRESHOLD &&
+                    HighlightTypeMap.TryGetLanguage(extension, out var lang))
+                {
+                    var highlight = new HighlightModel(stream, lang);
+                    return View("HighlightIndex", highlight);
+                }
+
+                string mime = MimeTypeMap.GetMime(extension);
+                if (IsTextMime(mime))
+                    mime = UpdateCharset(stream, mime);
+
+                stream.Seek(0, SeekOrigin.Begin);
+                return File(stream, mime, enableRangeProcessing: true);
             }
 
             // serve directory
@@ -87,22 +110,17 @@ namespace FileShareSite.Controllers
             return detector.Charset;
         }
 
-        private IActionResult ServeFile(Stream stream, string path, string charset, bool enableRangeRequests)
+        private bool IsTextMime(string mime)
         {
-            if (stream.Length < HIGHLIGHT_SIZE_THRESHOLD &&
-                HighlightTypeMap.TryGetLanguage(Path.GetExtension(path), out var lang))
-            {
-                var highlight = new HighlightModel(stream, lang);
-                return View("HighlightIndex", highlight);
-            }
-
-            string mime = MimeTypeMap.GetMime(path);
-
+            return mime.StartsWith("text/") && !mime.Contains("; charset");
+        }
+        
+        private string UpdateCharset(Stream stream, string mime)
+        {
+            string charset = GetCharset(stream);
             if (charset != null)
-                if (mime.StartsWith("text/") && !mime.Contains("; charset"))
-                    mime += "; charset=" + charset;
-
-            return File(stream, mime, enableRangeRequests);
+                return mime + "; charset=" + charset;
+            return mime;
         }
 
         private FileSystemModel BuildDirectoryModel(DirectoryInfo directory)
@@ -123,6 +141,13 @@ namespace FileShareSite.Controllers
             return new FileSystemModel(items, isArchive: false);
         }
 
+        public static HashSet<string> _archiveExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".odt", ".ods", ".odp", ".odg",
+            ".docx", ".pptx", ".xlsx",
+            ".zip", ".jar"
+        };
+
         private ArchiveViewResult BuildArchiveView(string path)
         {
             var segments = GetSegments(path);
@@ -130,7 +155,8 @@ namespace FileShareSite.Controllers
 
             for (int i = 0; i < segments.Length; i++)
             {
-                if (!segments[i].EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                string extension = Path.GetExtension(segments[i]);
+                if (!_archiveExtensions.Contains(extension))
                     continue;
                 
                 for (int j = 0; j < i; j++)
