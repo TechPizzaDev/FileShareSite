@@ -37,44 +37,48 @@ namespace FileShareSite.Controllers
             path = path.Replace('\\', '/');
 
             // try to enter a zip archive
-            var archiveResult = BuildArchiveView(path);
-            if (archiveResult.IsValid)
-            {
-                if (archiveResult.HasFile)
-                {
-                    // serve file from inside the zip
-                    string fullName = archiveResult.File.FullName;
-                    var entry = archiveResult.Archive[fullName];
-                    HttpContext.Response.RegisterForDispose(archiveResult.Archive);
-
-                    if (archiveResult.File.Length <= HIGHLIGHT_SIZE_THRESHOLD &&
-                        HighlightTypeMap.TryGetLanguage(Path.GetExtension(fullName), out var lang))
-                    {
-                        var highlightStream = entry.OpenReader();
-                        HttpContext.Response.RegisterForDispose(highlightStream);
-
-                        var highlight = new HighlightModel(highlightStream, lang);
-                        return View("HighlightIndex", highlight);
-                    }
-
-                    string mime = MimeTypeMap.GetMime(fullName);
-                    if (IsTextMime(mime))
-                    {
-                        using (var stream = entry.OpenReader())
-                            mime = UpdateCharset(stream, mime);
-                    }
-
-                    var mainStream = entry.OpenReader();
-                    HttpContext.Response.RegisterForDispose(mainStream);
-                    return File(mainStream, mime, enableRangeProcessing: false);
-                }
-
-                if(archiveResult.HasModel)
-                    // serve directory from inside the zip
-                    return View(archiveResult.Model);
-
-                return NotFound();
-            }
+            var builder = new ArchiveTreeBuilder();
+            var archive = ZipFile.Read("testzip.zip").ToArchive();
+            var archiveView = builder.BuildTree(archive, (p) => Console.WriteLine("Progress: " + Math.Round(p * 100, 1)));
+           
+            //var archiveResult = BuildArchiveView(path);
+            //if (archiveResult.IsValid)
+            //{
+            //    if (archiveResult.HasFile)
+            //    {
+            //        // serve file from inside the zip
+            //        string fullName = archiveResult.File.FullName;
+            //        var entry = archiveResult.Archive[fullName];
+            //        HttpContext.Response.RegisterForDispose(archiveResult.Archive);
+            //
+            //        if (archiveResult.File.Length <= HIGHLIGHT_SIZE_THRESHOLD &&
+            //            HighlightTypeMap.TryGetLanguage(Path.GetExtension(fullName), out var lang))
+            //        {
+            //            var highlightStream = entry.OpenReader();
+            //            HttpContext.Response.RegisterForDispose(highlightStream);
+            //
+            //            var highlight = new HighlightModel(highlightStream, lang);
+            //            return View("HighlightIndex", highlight);
+            //        }
+            //
+            //        string mime = MimeTypeMap.GetMime(fullName);
+            //        if (IsTextMime(mime))
+            //        {
+            //            using (var stream = entry.OpenReader())
+            //                mime = UpdateCharset(stream, mime);
+            //        }
+            //
+            //        var mainStream = entry.OpenReader();
+            //        HttpContext.Response.RegisterForDispose(mainStream);
+            //        return File(mainStream, mime, enableRangeProcessing: false);
+            //    }
+            //
+            //    if(archiveResult.HasModel)
+            //        // serve directory from inside the zip
+            //        return View(archiveResult.Model);
+            //
+            //    return NotFound();
+            //}
 
             // serve file
             if (FileIO.Exists(path))
@@ -187,14 +191,14 @@ namespace FileShareSite.Controllers
             
             try
             {
-                var topDir = new ArchiveDirectoryEntry(null, "root");
+                var topDir = new ArchiveDirectory(null, "root");
 
                 foreach (var entry in archive.Entries)
                 {
                     var segments = GetSegments(entry.FileName);
                     int index = 0;
 
-                    void Recursive(ArchiveDirectoryEntry directory)
+                    void Recursive(ArchiveDirectory directory)
                     {
                         string name = Path.GetFileName(segments[index++].ToString());
 
@@ -202,7 +206,7 @@ namespace FileShareSite.Controllers
                         {
                             if (!directory.Directories.TryGetValue(name, out var nextDir))
                             {
-                                nextDir = new ArchiveDirectoryEntry(directory, name);
+                                nextDir = new ArchiveDirectory(directory, name);
                                 directory.Directories.Add(name, nextDir);
                             }
 
@@ -215,13 +219,13 @@ namespace FileShareSite.Controllers
                             {
                                 if (!directory.Directories.TryGetValue(name, out var nextDir))
                                 {
-                                    nextDir = new ArchiveDirectoryEntry(directory, name);
+                                    nextDir = new ArchiveDirectory(directory, name);
                                     directory.Directories.Add(name, nextDir);
                                 }
                                 Recursive(nextDir);
                             }
                             else
-                                directory.Files.Add(name, new ArchiveFileEntry(directory, name, entry.UncompressedSize, entry.CompressedSize));
+                                directory.Files.Add(name, new ArchiveFile(directory, name, entry.UncompressedSize, entry.CompressedSize));
                         }
                     }
 
@@ -230,7 +234,7 @@ namespace FileShareSite.Controllers
 
                 var modelItems = new List<FileSystemEntryModel>();
 
-                void AddItems(ArchiveDirectoryEntry directory)
+                void AddItems(ArchiveDirectory directory)
                 {
                     foreach (var dir in directory.Directories.Values)
                         modelItems.Add(new ZipDirectoryEntryModel(dir.Name));
@@ -244,7 +248,7 @@ namespace FileShareSite.Controllers
                 else
                 {
                     int index = 0;
-                    ArchiveSearchResult RecursiveSearch(ArchiveDirectoryEntry directory)
+                    ArchiveSearchResult RecursiveSearch(ArchiveDirectory directory)
                     {
                         if (index < subPath.Length)
                         {
@@ -285,9 +289,9 @@ namespace FileShareSite.Controllers
         readonly struct ArchiveSearchResult
         {
             public bool IsSuccessful { get; }
-            public ArchiveFileEntry File { get; }
+            public ArchiveFile File { get; }
 
-            public ArchiveSearchResult(bool successful, ArchiveFileEntry file)
+            public ArchiveSearchResult(bool successful, ArchiveFile file)
             {
                 IsSuccessful = successful;
                 File = file;
@@ -299,13 +303,13 @@ namespace FileShareSite.Controllers
             public bool IsValid { get; }
 
             public ZipFile Archive { get; }
-            public ArchiveFileEntry File { get; }
+            public ArchiveFile File { get; }
             public bool HasFile => Archive != null && File != null;
 
             public FileSystemModel Model { get; }
             public bool HasModel => Model != null;
 
-            private ArchiveViewResult(ZipFile archive, ArchiveFileEntry file, FileSystemModel model)
+            private ArchiveViewResult(ZipFile archive, ArchiveFile file, FileSystemModel model)
             {
                 IsValid = true;
                 Archive = archive;
@@ -313,7 +317,7 @@ namespace FileShareSite.Controllers
                 Model = model;
             }
 
-            public ArchiveViewResult(ZipFile archive, ArchiveFileEntry file) : this(archive, file, null)
+            public ArchiveViewResult(ZipFile archive, ArchiveFile file) : this(archive, file, null)
             {
             }
 

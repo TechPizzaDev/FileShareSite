@@ -2,11 +2,11 @@
 
 namespace FileShareSite
 {
-    public abstract class ArchiveItemEntry
+    public abstract class ArchiveItem
     {
         private string _fullName;
 
-        public ArchiveDirectoryEntry Parent { get; }
+        public ArchiveDirectory Parent { get; }
         public string Name { get; }
         public string FullName
         {
@@ -18,7 +18,7 @@ namespace FileShareSite
             }
         }
 
-        protected ArchiveItemEntry(ArchiveDirectoryEntry parent, string name)
+        protected ArchiveItem(ArchiveDirectory parent, string name)
         {
             Parent = parent;
             Name = name;
@@ -39,7 +39,7 @@ namespace FileShareSite
             return builder.ToString();
         }
 
-        private static void RecursiveAppend(StringBuilder builder, ArchiveDirectoryEntry parent)
+        private static void RecursiveAppend(StringBuilder builder, ArchiveDirectory parent)
         {
             if (parent.Parent != null)
             {
@@ -52,7 +52,7 @@ namespace FileShareSite
             }
         }
 
-        private static void RecursiveGetNameLength(ref int value, ArchiveDirectoryEntry parent)
+        private static void RecursiveGetNameLength(ref int value, ArchiveDirectory parent)
         {
             if (parent.Parent != null)
             {
