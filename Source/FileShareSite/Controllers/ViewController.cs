@@ -25,11 +25,25 @@ namespace FileShareSite.Controllers
             return path.Split('/', StringSplitOptions.RemoveEmptyEntries);
         }
 
+        private void Log(ArchiveDirectory dir, int depth = 0)
+        {
+            foreach(var f in dir.Files)
+            {
+                Console.WriteLine(new string(' ', depth * 3) + f.Value.Name);
+            }
+
+            foreach(var d in dir.Directories)
+            {
+                Console.WriteLine(new string(' ', depth * 3) + d.Value.Name);
+                Log(d.Value, depth + 1);
+            }
+        }
+
         // GET: /<controller>/
         [HttpGet]
         public IActionResult Index(string path)
         {
-            const string root = @"C:\Users\Michal Piatkowski\Downloads\";
+            const string root = @"C:\Users\User\Hämtade Filer\";
             if (path == null)
                 path = root;
             else
@@ -38,9 +52,12 @@ namespace FileShareSite.Controllers
 
             // try to enter a zip archive
             var builder = new ArchiveTreeBuilder();
-            var archive = ZipFile.Read("testzip.zip").ToArchive();
-            var archiveView = builder.BuildTree(archive, (p) => Console.WriteLine("Progress: " + Math.Round(p * 100, 1)));
-           
+            var archive = ZipFile.Read(@"C:\Users\User\Hämtade Filer\DotNetZip.Semverd-master.zip").ToArchive();
+            var archiveView = builder.BuildTree(archive, null); // (p) => Console.WriteLine("Progress: " + Math.Round(p * 100, 1))
+            archive.Dispose();
+
+            Log(archiveView);
+
             //var archiveResult = BuildArchiveView(path);
             //if (archiveResult.IsValid)
             //{

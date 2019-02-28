@@ -9,7 +9,9 @@ namespace FileShareSite
 
         public long Length => _entry.UncompressedSize;
         public long CompressedLength => _entry.CompressedSize;
+        public bool IsDirectory => _entry.IsDirectory;
         public string FullName => _entry.FileName;
+        public string Name => Path.GetFileName(FullName);
 
         public ZipArchiveEntry(ZipEntry entry)
         {

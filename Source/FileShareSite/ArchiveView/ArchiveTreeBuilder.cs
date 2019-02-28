@@ -19,20 +19,56 @@ namespace FileShareSite
             foreach(IArchiveEntry entry in archive)
             {
                 string[] segments = GetSegments(entry.FullName);
-
-                void AddRecursively(ArchiveDirectory directory)
+                if (entry.IsDirectory)
                 {
-
+                    CreateDirectoryTree(segments, 0, segments.Length, topDir);
                 }
+                else
+                {
+                    if (segments.Length == 1)
+                    {
+                        string segment = segments[0];
+                        var file = CreateFileFromEntry(topDir, segment, entry);
+                        topDir.Files.Add(segment, file);
+                    }
+                    else
+                    {
+                        var dir = CreateDirectoryTree(segments, 0, segments.Length - 1, topDir);
+                        string segment = segments[segments.Length - 1];
 
-
-                AddRecursively(topDir);
-
+                        var file = CreateFileFromEntry(topDir, segment, entry);
+                        dir.Files.Add(segment, file);
+                    }
+                }
                 processed++;
-                onProgress(processed / (float)archive.Count);
+                onProgress?.Invoke(processed / (float)archive.Count);
             }
             
-            return null;
+            return topDir;
+        }
+
+        private static ArchiveDirectory CreateDirectoryTree(string[] segments, int offset, int count, ArchiveDirectory topDir)
+        {
+            if (offset >= count)
+                return topDir;
+
+            string segment = segments[offset];
+            if (!topDir.Directories.TryGetValue(segment, out var subDir))
+            {
+                subDir = new ArchiveDirectory(topDir, segment);
+                topDir.Directories.Add(segment, subDir);
+            }
+
+            return CreateDirectoryTree(segments, offset + 1, count, subDir);
+        }
+
+        private static ArchiveFile CreateFileFromEntry(ArchiveDirectory parent, string name, IArchiveEntry entry)
+        {
+            return new ArchiveFile(
+                parent,
+                name,
+                entry.Length,
+                entry.CompressedLength);
         }
 
         private static string[] GetSegments(string path)

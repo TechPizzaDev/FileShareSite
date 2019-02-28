@@ -7,7 +7,9 @@ namespace FileShareSite
     {
         long Length { get; }
         long CompressedLength { get; }
+        bool IsDirectory { get; }
         string FullName { get; }
+        string Name { get; }
 
         Stream OpenStream();
     }
