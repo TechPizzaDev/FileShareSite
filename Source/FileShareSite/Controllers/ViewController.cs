@@ -25,17 +25,39 @@ namespace FileShareSite.Controllers
             return path.Split('/', StringSplitOptions.RemoveEmptyEntries);
         }
 
-        private void Log(ArchiveDirectory dir, int depth = 0)
+        private string Log(ArchiveDirectory dir)
         {
-            foreach(var f in dir.Files)
+            var builder = new StringBuilder();
+            builder.AppendLine(dir.FullName);
+
+            Log(dir, builder, "");
+            return builder.ToString();
+        }
+
+        private void Log(ArchiveDirectory dir, StringBuilder builder, string prefix)
+        {
+            int fc = 0;
+            foreach (var f in dir.Files)
             {
-                Console.WriteLine(new string(' ', depth * 3) + f.Value.Name);
+                string p = (fc++ == dir.Files.Count - 1 && dir.Directories.Count == 0) ? "└─ " : "├─ ";
+
+                builder.Append(prefix);
+                builder.Append(p);
+                builder.AppendLine(f.Value.Name);
             }
 
+            int dc = 0;
             foreach(var d in dir.Directories)
             {
-                Console.WriteLine(new string(' ', depth * 3) + d.Value.Name);
-                Log(d.Value, depth + 1);
+                string p1 = dc == dir.Directories.Count - 1 ? "└─ " : "├─ ";
+                string p2 = dc == dir.Directories.Count - 1 ? "   " : "│  ";
+                dc++;
+
+                builder.Append(prefix);
+                builder.Append(p1);
+                builder.AppendLine(d.Value.Name);
+                
+                Log(d.Value, builder, prefix + p2);
             }
         }
 
@@ -43,20 +65,12 @@ namespace FileShareSite.Controllers
         [HttpGet]
         public IActionResult Index(string path)
         {
-            const string root = @"C:\Users\User\Hämtade Filer\";
+            const string root = @"C:\Users\Michal Piatkowski\Downloads\";
             if (path == null)
                 path = root;
             else
                 path = Path.Combine(root, path);
             path = path.Replace('\\', '/');
-
-            // try to enter a zip archive
-            var builder = new ArchiveTreeBuilder();
-            var archive = ZipFile.Read(@"C:\Users\User\Hämtade Filer\DotNetZip.Semverd-master.zip").ToArchive();
-            var archiveView = builder.BuildTree(archive, null); // (p) => Console.WriteLine("Progress: " + Math.Round(p * 100, 1))
-            archive.Dispose();
-
-            Log(archiveView);
 
             //var archiveResult = BuildArchiveView(path);
             //if (archiveResult.IsValid)
@@ -100,6 +114,18 @@ namespace FileShareSite.Controllers
             // serve file
             if (FileIO.Exists(path))
             {
+                // try to enter a zip archive
+                string zipPath = "testzip.zip"; //root + @"FTB+Presents+Direwolf20+1.12-1.12.2-2.3.0-Server.zip";
+                if (ZipFile.IsZipFile(zipPath))
+                {
+                    var builder = new ArchiveTreeBuilder();
+                    var archive = ZipFile.Read(zipPath).ToArchive();
+                    var archiveView = builder.BuildTree(archive, null); // (p) => Console.WriteLine("Progress: " + Math.Round(p * 100, 1))
+                    archive.Dispose();
+
+                    Console.WriteLine(Log(archiveView));
+                }
+
                 Stream stream = FileIO.OpenRead(path);
                 string extension = Path.GetExtension(path);
 

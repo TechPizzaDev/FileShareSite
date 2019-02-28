@@ -24,8 +24,11 @@ namespace FileShareSite
             Name = name;
         }
 
-        private string CreateFullName()
+        protected virtual string CreateFullName()
         {
+            if (Parent == null)
+                return Name;
+
             int nameLength = Name.Length;
             RecursiveGetNameLength(ref nameLength, Parent);
 

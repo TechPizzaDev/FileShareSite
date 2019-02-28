@@ -9,6 +9,7 @@ namespace FileShareSite
         private ZipFile _file;
 
         public int Count => _file.Count;
+        public string Name => _file.Name;
 
         public ZipArchive(ZipFile file)
         {

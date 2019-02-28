@@ -13,5 +13,10 @@ namespace FileShareSite
             Directories = new Dictionary<string, ArchiveDirectory>(StringComparer.Ordinal);
             Files = new Dictionary<string, ArchiveFile>(StringComparer.Ordinal);
         }
+
+        protected override string CreateFullName()
+        {
+            return base.CreateFullName() + "/";
+        }
     }
 }

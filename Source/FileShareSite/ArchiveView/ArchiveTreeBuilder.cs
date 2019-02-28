@@ -13,12 +13,12 @@ namespace FileShareSite
 
         public ArchiveDirectory BuildTree(IArchive archive, ProgressDelegate onProgress)
         {
-            var topDir = new ArchiveDirectory(null, string.Empty);
+            var topDir = new ArchiveDirectory(null, archive.Name);
 
             int processed = 0;
             foreach(IArchiveEntry entry in archive)
             {
-                string[] segments = GetSegments(entry.FullName);
+                string[] segments = GetPathSegments(entry.FullName);
                 if (entry.IsDirectory)
                 {
                     CreateDirectoryTree(segments, 0, segments.Length, topDir);
@@ -71,7 +71,7 @@ namespace FileShareSite
                 entry.CompressedLength);
         }
 
-        private static string[] GetSegments(string path)
+        private static string[] GetPathSegments(string path)
         {
             return path.Split(_segmentSeparators, StringSplitOptions.RemoveEmptyEntries);
         }
